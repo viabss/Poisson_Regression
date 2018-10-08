@@ -1,8 +1,6 @@
 #import statements
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-import pandas as pd
-import numpy as np
 import os
 
 def h20_init_end(flag):
@@ -15,7 +13,7 @@ def h20_init_end(flag):
 
 
 def import_data():
-    hw_df = h2o.import_file(os.path.realpath('.\\Data\poisson_sim.csv'))
+    hw_df = h2o.import_file(os.path.join('Data', 'poisson_sim.csv'))
     hw_df['prog'] = hw_df['prog'].asfactor()
     return hw_df
 
@@ -25,12 +23,26 @@ def create_model(hw_df):
     hw_df_y = hw_df.col_names[1]
     glm_poisson = H2OGeneralizedLinearEstimator(model_id='glm_v1', family='poisson')
     glm_poisson.train(hw_df_x, hw_df_y, training_frame=train, validation_frame=valid)
+    # print(glm_poisson.summary())
+    # print('Training Deviance:{0} on {1} Degrees of Freedom '.format(str(glm_poisson.residual_deviance(train=True)), str(glm_poisson.residual_degrees_of_freedom(train=True))))
+    # print('Validation Deviance:{0} on {1} Degrees of Freedom '.format(str(glm_poisson.residual_deviance(valid=True)), str(glm_poisson.residual_degrees_of_freedom(valid=True))))
+    return (glm_poisson, test)
+
+def predict_model(glm_poisson, test):
+    pred = glm_poisson.predict(test)
+    pred_scr = pred.round(0)
+    # print('Model Performance:', glm_poisson.model_performance(test))
+    # glm_poisson.model_performance(test)
+    train_score = pred_scr.concat(test)
+    print(train_score.head(25))
+
 
 def main():
     h20_init_end(1)
     hw_df = import_data()
-    create_model(hw_df)
-    # h20_init_end(0)
+    glm_poisson, test = create_model(hw_df)
+    predict_model(glm_poisson, test)
+    h20_init_end(0)
 
 if __name__ == '__main__':
     main()
